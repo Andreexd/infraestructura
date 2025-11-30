@@ -191,22 +191,50 @@ document.addEventListener('DOMContentLoaded', function() {
     if (uploadForm) {
         uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            
+
             const fileInput = document.getElementById('file');
             const file = fileInput.files[0];
-            
+            const description = document.getElementById('description').value;
+            const isPublic = false; // Por ahora siempre privado
+
             if (!file) {
                 showAlert('Por favor selecciona un archivo', 'warning');
                 return;
             }
-            
-            // Simulación de subida (cuando S3 esté configurado)
-            showAlert('Funcionalidad de subida a S3 próximamente disponible', 'info');
-            
+
+            // Crear FormData para enviar el archivo
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('description', description);
+            formData.append('isPublic', isPublic);
+
+            // Mostrar indicador de carga
+            showAlert('Subiendo archivo...', 'info');
+
+            // Enviar archivo a la API
+            fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('Archivo subido correctamente', 'success');
+                    // Recargar la lista de archivos
+                    loadUserFiles();
+                } else {
+                    showAlert(data.message || 'Error al subir archivo', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('Error al subir archivo', 'error');
+            });
+
             // Cerrar modal
             const uploadModal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
             uploadModal.hide();
-            
+
             // Limpiar formulario
             uploadForm.reset();
         });

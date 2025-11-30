@@ -3,6 +3,8 @@ const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const path = require('path');
+const AWS = require('aws-sdk');
+const multer = require('multer');
 require('dotenv').config();
 
 const app = express();
@@ -12,6 +14,18 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Configurar AWS S3
+AWS.config.update({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION
+});
+
+const s3 = new AWS.S3();
+
+// Configurar multer para memoria
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Sesiones
 app.use(session({
@@ -239,6 +253,62 @@ app.post('/api/logout', (req, res) => {
     }
     res.json({ success: true, message: 'Logout exitoso' });
   });
+});
+
+// Ruta para subir archivos a S3
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, message: 'No autorizado' });
+    }
+
+    if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No se subió ningún archivo' });
+    }
+
+    const fileName = Date.now() + '-' + req.file.originalname;
+    const uploadParams = {
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: 'uploads/' + fileName,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype
+    };
+
+    s3.upload(uploadParams, (err, data) => {
+        if (err) {
+            console.error('Error al subir a S3:', err);
+            return res.status(500).json({ success: false, message: 'Error al subir archivo' });
+        }
+
+        const fileData = {
+            user_id: req.session.userId,
+            filename: req.file.originalname,
+            file_url: data.Location,
+            file_size: req.file.size,
+            file_type: req.file.mimetype,
+            description: req.body.description || '',
+            is_public: req.body.isPublic === 'true' ? 1 : 0
+        };
+
+        const query = `INSERT INTO user_files (user_id, filename, file_url, file_size, file_type, description, is_public) 
+                       VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+        db.query(query, [fileData.user_id, fileData.filename, fileData.file_url, fileData.file_size, fileData.file_type, fileData.description, fileData.is_public], (err, result) => {
+            if (err) {
+                console.error('Error al guardar archivo en BD:', err);
+                return res.status(500).json({ success: false, message: 'Error al guardar archivo' });
+            }
+
+            res.json({
+                success: true,
+                message: 'Archivo subido correctamente',
+                file: {
+                    id: result.insertId,
+                    filename: fileData.filename,
+                    url: fileData.file_url
+                }
+            });
+        });
+    });
 });
 
 // API para obtener información del usuario
