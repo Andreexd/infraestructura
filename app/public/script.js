@@ -220,8 +220,10 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     showAlert('Archivo subido correctamente', 'success');
-                    // Recargar la lista de archivos
-                    loadUserFiles();
+                    // Recargar la lista de archivos (función simple)
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
                 } else {
                     showAlert(data.message || 'Error al subir archivo', 'error');
                 }
