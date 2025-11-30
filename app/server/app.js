@@ -375,7 +375,7 @@ app.get('/api/user/files', (req, res) => {
   
   if (db) {
     const query = `
-      SELECT id, filename, original_name, file_size, mime_type, 
+      SELECT id, filename, file_url, file_size, file_type, 
              description, upload_date, is_public
       FROM user_files 
       WHERE user_id = ? 

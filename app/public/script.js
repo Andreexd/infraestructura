@@ -253,6 +253,9 @@ document.addEventListener('DOMContentLoaded', function() {
             lastAccessElement.textContent = now.toLocaleDateString('es-ES');
         }
         
+        // Cargar archivos del usuario
+        loadUserFiles();
+        
         // Agregar efecto de fade-in a las tarjetas
         const cards = document.querySelectorAll('.card');
         cards.forEach((card, index) => {
@@ -262,6 +265,48 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Función para cargar archivos del usuario
+async function loadUserFiles() {
+    try {
+        const result = await apiRequest('/api/user/files');
+        if (result.success) {
+            displayUserFiles(result.files);
+        }
+    } catch (error) {
+        console.error('Error al cargar archivos:', error);
+    }
+}
+
+// Función para mostrar archivos en la interfaz
+function displayUserFiles(files) {
+    const recentFilesContainer = document.querySelector('.recent-files');
+    if (!recentFilesContainer) return;
+
+    if (files.length === 0) {
+        recentFilesContainer.innerHTML = '<p class="text-muted">No hay archivos subidos aún.</p>';
+        return;
+    }
+
+    const filesHTML = files.map(file => `
+        <div class="file-item d-flex justify-content-between align-items-center p-2 border-bottom">
+            <div>
+                <strong>${escapeHtml(file.filename)}</strong>
+                <br>
+                <small class="text-muted">
+                    ${formatFileSize(file.file_size)} - ${formatDate(file.upload_date)}
+                </small>
+            </div>
+            <div>
+                <a href="${file.file_url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    Ver archivo
+                </a>
+            </div>
+        </div>
+    `).join('');
+
+    recentFilesContainer.innerHTML = filesHTML;
+}
 
 // Funciones utilitarias
 function formatFileSize(bytes) {
