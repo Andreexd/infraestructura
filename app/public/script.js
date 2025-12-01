@@ -280,32 +280,60 @@ async function loadUserFiles() {
 
 // Función para mostrar archivos en la interfaz
 function displayUserFiles(files) {
-    const recentFilesContainer = document.querySelector('.recent-files');
-    if (!recentFilesContainer) return;
+    const filesListContainer = document.getElementById('filesList');
+    if (!filesListContainer) return;
 
     if (files.length === 0) {
-        recentFilesContainer.innerHTML = '<p class="text-muted">No hay archivos subidos aún.</p>';
+        filesListContainer.innerHTML = `
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Tamaño</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">
+                            No hay archivos subidos aún
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
         return;
     }
 
     const filesHTML = files.map(file => `
-        <div class="file-item d-flex justify-content-between align-items-center p-2 border-bottom">
-            <div>
-                <strong>${escapeHtml(file.filename)}</strong>
-                <br>
-                <small class="text-muted">
-                    ${formatFileSize(file.file_size)} - ${formatDate(file.upload_date)}
-                </small>
-            </div>
-            <div>
+        <tr>
+            <td><strong>${escapeHtml(file.filename)}</strong></td>
+            <td>${formatFileSize(file.file_size)}</td>
+            <td>${formatDate(file.upload_date)}</td>
+            <td>
                 <a href="${file.file_url}" target="_blank" class="btn btn-sm btn-outline-primary">
                     Ver archivo
                 </a>
-            </div>
-        </div>
+            </td>
+        </tr>
     `).join('');
 
-    recentFilesContainer.innerHTML = filesHTML;
+    filesListContainer.innerHTML = `
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Tamaño</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filesHTML}
+            </tbody>
+        </table>
+    `;
 }
 
 // Funciones utilitarias
